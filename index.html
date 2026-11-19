@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>HARDEN14 ESEX</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#eee;font-family:Arial,sans-serif}
+.wrap{max-width:520px;margin:auto;padding:16px}
+h1{font-size:25px;margin:4px 0 16px}
+select,input,button{width:100%;font-size:17px;border-radius:10px;border:1px solid #444;padding:12px;background:#1d1d1d;color:#fff}
+label{display:block;font-size:13px;color:#aaa;margin:10px 0 5px}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.types button{padding:10px 5px;font-size:14px}
+.types .on{background:#eee;color:#111}
+.add{margin-top:12px;background:#eee;color:#111;font-weight:bold}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 10px}
+.card{background:#1b1b1b;border:1px solid #333;border-radius:12px;padding:11px}
+.card small{color:#999}.card b{display:block;font-size:20px;margin-top:5px}
+.balance{border-radius:14px;padding:15px;margin:10px 0 18px;background:#1b1b1b;border:1px solid #444;text-align:center}
+.balance small{color:#aaa}.balance strong{display:block;font-size:30px;margin-top:5px}
+.pos{color:#7ee787}.neg{color:#ff7b72}
+.row{display:grid;grid-template-columns:28px minmax(0,1fr) 105px 28px;align-items:center;gap:8px;padding:12px 2px;border-bottom:1px solid #292929}.row .num{color:#777;font-size:15px;text-align:center}.row .desc{min-width:0}.row .desc b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row .desc small{color:#888}.amt{font-weight:bold;white-space:nowrap;text-align:right;justify-self:stretch}.del{border:0;background:none;color:#888;width:auto;padding:0 4px;font-size:18px;text-align:center}
+.empty{color:#777;text-align:center;padding:30px 0}
+.search-wrap{margin:14px 0 6px}.search-wrap input{border-color:#555;background:#202020}.search-note{font-size:12px;color:#888;margin:5px 2px 0}
+.footer{display:flex;gap:8px;margin-top:15px}.footer button{font-size:13px}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10;padding:20px}
+.modalbox{max-width:500px;margin:60px auto;background:#181818;border:1px solid #444;border-radius:15px;padding:16px}
+.modalbox h2{margin-top:0}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.cancel{background:#292929}.saveedit{background:#eee;color:#111;font-weight:bold}
+.types{display:flex;gap:10px;flex-wrap:wrap}.types button{flex:1 1 120px;min-width:110px}</style>
+
+<style>
+.backup-panel{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.backup-panel button{padding:10px 14px;border-radius:8px;cursor:pointer}
+</style>
+
+<style id="harden14-summary-colors">
+.card-income{background:#183d25 !important;border-color:#2f7d46 !important}
+.card-expense{background:#4a1c1c !important;border-color:#8f3d3d !important}
+.card-personal{background:#4a3216 !important;border-color:#a66d27 !important}
+.card-home{background:#173a55 !important;border-color:#2e6f9e !important}
+.card-despoina{background:#4a1d3a !important;border-color:#9d4d7d !important}
+</style>
+<style id="harden14-month-fix">
+#month{color:#f5f5f5;background:#1d1d1d}
+#month option{color:#f5f5f5;background:#1d1d1d}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>HARDEN14 ESEX</h1>
+
+<label>Μήνας</label>
+<select id="month"></select>
+
+<label>Ημερομηνία</label>
+<input id="date" type="date">
+
+<label>Αιτιολογία</label>
+<input id="reason" type="text" placeholder="π.χ. Βενζίνη, εργασία, υλικά">
+
+<label>Τύπος</label>
+<div class="types">
+<button type="button" data-type="income" class="on">ΕΣΟΔΟ</button>
+<button type="button" data-type="expense">ΕΞΟΔΟ</button>
+<button type="button" data-type="personal">ΠΡΟΣΩΠΙΚΟ</button>
+<button type="button" data-type="home">HOME</button>
+<button type="button" data-type="despoina">DESPOINA</button>
+</div>
+
+<label>Ποσό (€)</label>
+<input id="amount" type="number" inputmode="decimal" step="0.01" placeholder="0,00">
+<button type="button" class="add" id="add">+ ΚΑΤΑΧΩΡΗΣΗ</button>
+
+<div class="cards">
+<div class="card card-income" style="background:#183d25 !important;border-color:#2f7d46 !important"><small>Έσοδα</small><b id="income">0,00 €</b></div>
+<div class="card card-expense" style="background:#4a3216 !important;border-color:#a66d27 !important"><small>Έξοδα</small><b id="expense">0,00 €</b></div>
+<div class="card card-personal" style="background:#4a3216 !important;border-color:#a66d27 !important"><small>Προσωπικά</small><b id="personal">0,00 €</b></div>
+<div class="card card-home" style="background:#173a55 !important;border-color:#2e6f9e !important"><small>Home</small><b id="homeTotal">0,00 €</b></div>
+<div class="card card-despoina" style="background:#4a1d3a !important;border-color:#9d4d7d !important"><small>Despoina</small><b id="despoinaTotal">0,00 €</b></div>
+<div class="card card-total-expense" style="background:#4a1c1c !important;border-color:#8f3d3d !important"><small>Σύνολο εξόδων</small><b id="totalexp">0,00 €</b></div>
+</div>
+
+<div class="balance"><small>ΔΙΑΘΕΣΙΜΟ ΥΠΟΛΟΙΠΟ</small><strong id="balance">0,00 €</strong></div>
+
+<div class="search-wrap">
+ <label for="search">ΑΝΑΖΗΤΗΣΗ ΚΑΤΑΧΩΡΙΣΗΣ</label>
+ <input id="search" type="search" placeholder="Γράψε όνομα ή λέξη…" autocomplete="off">
+ <div class="search-note" id="searchNote">Αναζήτηση σε όλες τις καταχωρίσεις.</div>
+</div>
+<div id="list"></div>
+<div class="footer">
+<div class="backup-panel">
+  <button type="button" id="backup">💾 BACKUP ΟΛΩΝ</button>
+  <button type="button" id="restore">↩ RESTORE</button>
+</div>
+
+<button type="button" id="export">Εξαγωγή CSV</button>
+
+</div>
+</div>
+
+<script>
+const KEY='harden14_money_v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'[]');
+let type='income';
+const $=id=>document.getElementById(id);
+const today=new Date();
+$('date').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+function harden14InitMonths(){
+  const monthEl=$('month');
+  monthEl.innerHTML='';
+  const now=new Date();
+  for(let i=0;i<24;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const v=`${y}-${m}`;
+    const o=document.createElement('option');
+    o.value=v;
+    o.textContent=d.toLocaleDateString('el-GR',{month:'long',year:'numeric'});
+    monthEl.appendChild(o);
+  }
+  const current=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  monthEl.value=current;
+  if(monthEl.value!==current && monthEl.options.length){
+    monthEl.selectedIndex=0;
+  }
+}
+harden14InitMonths();
+
+document.querySelectorAll('.types button').forEach(b=>b.onclick=()=>{
+ type=b.dataset.type;
+ document.querySelectorAll('.types button').forEach(x=>x.classList.remove('on'));
+ b.classList.add('on');
+});
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function money(n){return new Intl.NumberFormat('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+' €'}
+function render(){
+ const m=$('month').value;
+ const monthRows=data.filter(x=>x.date && x.date.startsWith(m)).sort((a,b)=>b.date.localeCompare(a.date) || Number(b.id)-Number(a.id));
+ const query=($('search')?.value||'').trim().toLocaleLowerCase('el-GR');
+ const typeNames={income:'έσοδο',expense:'έξοδο',personal:'προσωπικό',home:'home',despoina:'despoina'};
+ const rows=query ? data.filter(x=>{
+   const hay=[x.reason||'',x.date||'',typeNames[x.type]||x.type||'',String(x.amount??'')].join(' ').toLocaleLowerCase('el-GR');
+   return hay.includes(query);
+ }).sort((a,b)=>(b.date||'').localeCompare(a.date||'') || Number(b.id)-Number(a.id)) : monthRows;
+ let inc=0, exp=0, per=0, home=0, despoina=0;
+ rows.forEach(x=>{if(x.type==='income')inc+=x.amount;else if(x.type==='personal')per+=x.amount;else if(x.type==='home')home+=x.amount;else if(x.type==='despoina')despoina+=x.amount;else if(x.type==='expense')exp+=x.amount;});
+ $('income').textContent=money(inc);
+ $('expense').textContent=money(exp);
+ $('personal').textContent=money(per);
+ $('homeTotal').textContent=money(home);
+ $('despoinaTotal').textContent=money(despoina);
+ $('totalexp').textContent=money(exp+per+home+despoina);
+ // Cumulative available balance: previous months carry forward,
+ // whether positive or negative, then this month's result is added.
+ let carry = 0;
+ data.forEach(x => {
+   if (!x.date || x.date.slice(0,7) >= m) return;
+   const amount = Number(x.amount) || 0;
+   if (x.type === 'income') carry += amount;
+   else carry -= amount;
+ });
+ const bal = carry + inc - exp - per - home - despoina;
+ $('balance').textContent=(bal>=0?'+ ':'− ')+money(Math.abs(bal));
+ $('balance').className=bal>=0?'pos':'neg';
+ $('searchNote').textContent=query?`Βρέθηκαν ${rows.length} αποτελέσματα σε όλες τις καταχωρίσεις.`:'Αναζήτηση σε όλες τις καταχωρίσεις.';
+ $('list').innerHTML=rows.length?rows.map((x,i)=>`
+ <div class="row" onclick="editRow('${x.id}')">
+  <div class="num">${i+1}</div>
+  <div class="desc"><b>${escapeHtml(x.reason)}</b><small>${(x.date||'').split('-').reverse().join('/')} · ${typeNames[x.type]||x.type||''}</small></div>
+  <div class="amt ${x.type==='income'?'pos':'neg'}">${x.type==='income'?'+':'−'} ${money(x.amount)}</div>
+  <button type="button" class="del" onclick="event.stopPropagation();removeRow('${x.id}')">×</button>
+ </div>`).join(''):'<div class="empty">Δεν υπάρχουν καταχωρήσεις για αυτόν τον μήνα.</div>';
+}
+// HARDEN14_AUTO_CURRENT_MONTH
+// Always open on the current calendar month; date field remains today's date.
+function harden14SetCurrentMonth(){
+  const now = new Date();
+  const currentMonth = now.toISOString().slice(0,7);
+  const monthEl = document.getElementById('month');
+  if(monthEl){
+    monthEl.value = currentMonth;
+    if(typeof render === 'function') render();
+  }
+}
+// HARDEN14_INITIAL_RENDER
+// Show the selected month immediately when the app opens.
+window.addEventListener('load',()=>{
+  const now=new Date();
+  const todayLocal=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  $('date').value=todayLocal;
+  harden14InitMonths();
+  $('month').value=todayLocal.slice(0,7);
+  render();
+});
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function removeRow(id){data=data.filter(x=>x.id!==id);save();render()}
+$('add').onclick=()=>{
+ const reason=$('reason').value.trim(), amount=parseFloat($('amount').value), date=$('date').value;
+ if(!reason||!amount||amount<=0||!date){alert('Συμπλήρωσε ημερομηνία, αιτιολογία και ποσό.');return}
+ data.push({id:Date.now().toString(),date,reason,amount,type});save();
+ $('reason').value='';$('amount').value='';$('month').value=date.slice(0,7);render();
+}
+$('search').addEventListener('input',render);
+$('month').onchange=()=>{
+ const selected=$('month').value;
+ if(selected){
+   const dayEl=$('date');
+   const oldDay=parseInt((dayEl.value||'').split('-')[2],10) || 1;
+   const [y,m]=selected.split('-').map(Number);
+   const lastDay=new Date(y,m,0).getDate();
+   const day=String(Math.min(oldDay,lastDay)).padStart(2,'0');
+   dayEl.value=`${y}-${String(m).padStart(2,'0')}-${day}`;
+ }
+ render();
+};
+$('export').onclick=()=>{
+ const m=$('month').value, rows=data.filter(x=>x.date.startsWith(m));
+ const csv='Ημερομηνία,Αιτιολογία,Τύπος,Ποσό\\n'+rows.map(x=>`${x.date},"${x.reason.replace(/"/g,'""')}",${x.type},${x.amount.toFixed(2)}`).join('\\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='esoda-exoda-'+m+'.csv';a.click();
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+let editId=null, editType='income';
+function editRow(id){
+ const x=data.find(a=>a.id===id); if(!x)return;
+ editId=id; editType=x.type;
+ $('editDate').value=x.date; $('editReason').value=x.reason; $('editAmount').value=x.amount;
+ document.querySelectorAll('[data-et]').forEach(b=>b.classList.toggle('on',b.dataset.et===editType));
+ $('editModal').style.display='block';
+}
+document.addEventListener('click', function(e){
+ const typeBtn=e.target.closest('[data-et]');
+ if(typeBtn){
+   e.preventDefault(); e.stopPropagation();
+   editType=typeBtn.dataset.et;
+   document.querySelectorAll('[data-et]').forEach(x=>x.classList.toggle('on',x.dataset.et===editType));
+   return;
+ }
+ if(e.target.closest('#cancelEdit')){
+   e.preventDefault();
+   $('editModal').style.display='none'; editId=null;
+   return;
+ }
+ if(e.target.closest('#saveEdit')){
+   e.preventDefault();
+   if(!editId)return;
+   const reason=$('editReason').value.trim();
+   const amount=parseFloat($('editAmount').value);
+   const date=$('editDate').value;
+   if(!reason||!Number.isFinite(amount)||amount<=0||!date){
+     alert('Συμπλήρωσε ημερομηνία, αιτιολογία και ποσό.');
+     return;
+   }
+   const x=data.find(a=>String(a.id)===String(editId));
+   if(!x)return;
+   x.date=date; x.reason=reason; x.amount=amount; x.type=editType;
+   save();
+   $('month').value=date.slice(0,7);
+   $('editModal').style.display='none'; editId=null;
+   render();
+   return;
+ }
+});
+document.addEventListener('click',e=>{
+ if(e.target && e.target.id==='editModal'){
+   e.target.style.display='none'; editId=null;
+ }
+});
+
+render();
+
+// ---------- HARDEN14 FINAL DATA SYSTEM ----------
+const HARDEN14_BACKUP_VERSION = "FINAL-1";
+
+function harden14Download(filename, content, mime) {
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function harden14ReadData() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function harden14Backup() {
+  const entries = harden14ReadData();
+  const backup = {
+    app: "HARDEN14 Έσοδα / Έξοδα",
+    version: HARDEN14_BACKUP_VERSION,
+    key: KEY,
+    created: new Date().toISOString(),
+    entries: entries
+  };
+  const stamp = new Date().toISOString().replace(/[:.]/g,"-").slice(0,19);
+  harden14Download(
+    `HARDEN14_BACKUP_${stamp}.json`,
+    JSON.stringify(backup, null, 2),
+    "application/json;charset=utf-8"
+  );
+  alert(`BACKUP ΕΤΟΙΜΟ\\n\\nΑποθηκεύτηκαν ${entries.length} καταχωρήσεις.`);
+}
+
+function harden14NormalizeEntries(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries.filter(e => e && typeof e === "object").map((e, i) => {
+    const x = {...e};
+    if (x.amount !== undefined) x.amount = Number(x.amount);
+    return x;
+  }).filter(e => e.date && Number.isFinite(Number(e.amount)));
+}
+
+function harden14RestoreText(text) {
+  let incoming = [];
+  try {
+    const obj = JSON.parse(text);
+    incoming = Array.isArray(obj) ? obj : obj.entries;
+  } catch (_) {
+    // Optional simple CSV fallback: date,reason,type,amount
+    const lines = text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+    if (lines.length > 1) {
+      for (let i=1; i<lines.length; i++) {
+        const p = lines[i].split(",");
+        if (p.length >= 4) {
+          incoming.push({
+            id: `restore_${Date.now()}_${i}`,
+            date: p[0],
+            reason: p.slice(1,-2).join(",").replace(/^"|"$/g,""),
+            type: p[p.length-2],
+            amount: Number(p[p.length-1])
+          });
+        }
+      }
+    }
+  }
+
+  incoming = harden14NormalizeEntries(incoming);
+  if (!incoming.length) {
+    alert("Δεν βρέθηκαν έγκυρες καταχωρήσεις.");
+    return;
+  }
+
+  const current = harden14ReadData();
+  const fingerprints = new Set(current.map(e =>
+    JSON.stringify([e.date,e.reason,e.type,Number(e.amount)])
+  ));
+
+  let added = 0;
+  for (const e of incoming) {
+    const fp = JSON.stringify([e.date,e.reason,e.type,Number(e.amount)]);
+    if (!fingerprints.has(fp)) {
+      current.push(e);
+      fingerprints.add(fp);
+      added++;
+    }
+  }
+
+  localStorage.setItem(KEY, JSON.stringify(current));
+  data = current;
+  save();
+  render();
+  alert(`RESTORE ΟΛΟΚΛΗΡΩΘΗΚΕ\\n\\nΝέες καταχωρήσεις: ${added}\\nΣύνολο: ${current.length}`);
+}
+
+async function harden14ChooseRestore() {
+  const input = document.getElementById("restoreFile");
+  if (!input) return;
+  input.value = "";
+  input.click();
+}
+
+document.getElementById("backup")?.addEventListener("click", harden14Backup);
+document.getElementById("restore")?.addEventListener("click", harden14ChooseRestore);
+document.getElementById("restoreFile")?.addEventListener("change", async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    harden14RestoreText(await file.text());
+  } catch (_) {
+    alert("Σφάλμα ανάγνωσης backup.");
+  }
+});
+
+// HARDEN14 V4 DATA CONTROLS
+(function(){
+  const backupBtn=document.getElementById('backup');
+  const restoreBtn=document.getElementById('restore');
+  const restoreFile=document.getElementById('restoreFile');
+
+  if(backupBtn) backupBtn.addEventListener('click',function(e){
+    e.preventDefault();
+    const entries=Array.isArray(data)?data:[];
+    const payload={app:'HARDEN14 Έσοδα / Έξοδα',version:'V4',created:new Date().toISOString(),entries};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='HARDEN14_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  if(restoreBtn && restoreFile){
+    restoreBtn.addEventListener('click',function(e){e.preventDefault();restoreFile.click();});
+    restoreFile.addEventListener('change',async function(){
+      const f=this.files&&this.files[0]; if(!f)return;
+      try{
+        const obj=JSON.parse(await f.text());
+        const incoming=Array.isArray(obj)?obj:obj.entries;
+        if(!Array.isArray(incoming)||!incoming.length){alert('Το backup δεν περιέχει καταχωρήσεις.');return;}
+        const sig=new Set(data.map(x=>JSON.stringify([x.date,x.reason,x.type,Number(x.amount)])));
+        let added=0;
+        incoming.forEach(x=>{
+          const s=JSON.stringify([x.date,x.reason,x.type,Number(x.amount)]);
+          if(!sig.has(s)){data.push(x);sig.add(s);added++;}
+        });
+        save();render();
+        alert('RESTORE ολοκληρώθηκε. Προστέθηκαν '+added+' καταχωρήσεις.');
+      }catch(err){alert('Δεν μπόρεσα να διαβάσω το backup.');}
+      this.value='';
+    });
+  }
+})();
+
+</script>
+
+<div class="modal" id="editModal">
+ <div class="modalbox">
+  <h2>Επεξεργασία</h2>
+  <label>Ημερομηνία</label><input id="editDate" type="date">
+  <label>Αιτιολογία</label><input id="editReason" type="text">
+  <label>Τύπος</label>
+  <div class="types">
+   <button type="button" data-et="income">ΕΣΟΔΟ</button>
+    <button type="button" data-et="expense">ΕΞΟΔΟ</button>
+    <button type="button" data-et="personal">ΠΡΟΣΩΠΙΚΟ</button>
+    <button type="button" data-et="home">HOME</button>
+    <button type="button" data-et="despoina">DESPOINA</button>
+  </div>
+  <label>Ποσό (€)</label><input id="editAmount" type="number" inputmode="decimal" step="0.01">
+  <div class="modal-actions">
+   <button type="button" class="cancel" id="cancelEdit">ΑΚΥΡΩΣΗ</button>
+   <button type="button" class="saveedit" id="saveEdit">ΑΠΟΘΗΚΕΥΣΗ</button>
+  </div>
+ </div>
+</div>
+</body>
+</html>
