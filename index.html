@@ -406,41 +406,7 @@ document.getElementById("restoreFile")?.addEventListener("change", async e => {
 
 // HARDEN14 V4 DATA CONTROLS
 (function(){
-  const backupBtn=document.getElementById('backup');
-  const restoreBtn=document.getElementById('restore');
-  const restoreFile=document.getElementById('restoreFile');
 
-  if(backupBtn) backupBtn.addEventListener('click',function(e){
-    e.preventDefault();
-    const entries=Array.isArray(data)?data:[];
-    const payload={app:'HARDEN14 Έσοδα / Έξοδα',version:'V4',created:new Date().toISOString(),entries};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='HARDEN14_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(a); a.click(); a.remove();
-  });
-
-  if(restoreBtn && restoreFile){
-    restoreBtn.addEventListener('click',function(e){e.preventDefault();restoreFile.click();});
-    restoreFile.addEventListener('change',async function(){
-      const f=this.files&&this.files[0]; if(!f)return;
-      try{
-        const obj=JSON.parse(await f.text());
-        const incoming=Array.isArray(obj)?obj:obj.entries;
-        if(!Array.isArray(incoming)||!incoming.length){alert('Το backup δεν περιέχει καταχωρήσεις.');return;}
-        const sig=new Set(data.map(x=>JSON.stringify([x.date,x.reason,x.type,Number(x.amount)])));
-        let added=0;
-        incoming.forEach(x=>{
-          const s=JSON.stringify([x.date,x.reason,x.type,Number(x.amount)]);
-          if(!sig.has(s)){data.push(x);sig.add(s);added++;}
-        });
-        save();render();
-        alert('RESTORE ολοκληρώθηκε. Προστέθηκαν '+added+' καταχωρήσεις.');
-      }catch(err){alert('Δεν μπόρεσα να διαβάσω το backup.');}
-      this.value='';
-    });
-  }
 })();
 
 </script>
