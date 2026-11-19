@@ -1,4 +1,4 @@
-const CACHE_NAME = 'harden14-esex-v1';
+const CACHE_NAME = 'harden14-esex-v3';
 const APP_FILES = [
   './',
   './index.html',
